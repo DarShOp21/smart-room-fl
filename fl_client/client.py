@@ -9,6 +9,7 @@ from fl_client.trust.trust_score import (
     compute_reconstruction_error,
     compute_trust_score
 )
+from shared.config import SERVER_ADDRESS
 
 # Device configuration
 DEVICE = torch.device("cpu")
@@ -110,6 +111,6 @@ class SmartRoomClient(fl.client.NumPyClient):
 if __name__ == "__main__":
 
     fl.client.start_numpy_client(
-        server_address="127.0.0.1:8080",
-        client=SmartRoomClient(),
+        server_address=SERVER_ADDRESS,
+        client=SmartRoomClient().to_client(),
     )

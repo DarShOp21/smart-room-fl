@@ -1,12 +1,7 @@
-import torch
 import torch.nn.functional as F
 
 
 def compute_reconstruction_error(input_data, reconstructed_data):
-    """
-    Computes the reconstruction error between
-    original input and model output.
-    """
 
     error = F.mse_loss(
         reconstructed_data,
@@ -17,10 +12,9 @@ def compute_reconstruction_error(input_data, reconstructed_data):
     return error.item()
 
 
-def compute_trust_score(error, max_error=0.05):
+def compute_trust_score(error, max_error=0.3):
     """
-    Converts reconstruction error into
-    a normalized trust score between 0 and 1.
+    Convert reconstruction error to trust score.
     """
 
     trust = 1 - (error / max_error)
