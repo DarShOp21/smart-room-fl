@@ -9,6 +9,7 @@ from fl_client.trust.trust_score import (
     compute_reconstruction_error,
     compute_trust_score
 )
+
 from shared.config import SERVER_ADDRESS
 
 # Device configuration
