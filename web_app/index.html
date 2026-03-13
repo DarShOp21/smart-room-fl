@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Smart Room Monitor</title>
+
+<style>
+
+body{
+font-family:Arial;
+text-align:center;
+background:#f5f5f5;
+}
+
+.container{
+margin-top:40px;
+}
+
+button{
+padding:12px;
+font-size:16px;
+margin:10px;
+}
+
+.result{
+margin-top:20px;
+font-size:20px;
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<h1>Smart Room Sensor Simulator</h1>
+
+<div class="container">
+
+<button onclick="sendData()">Generate Sensor Data</button>
+
+<div class="result" id="result"></div>
+
+</div>
+
+
+<script>
+
+function randomValue(){
+return Math.random().toFixed(2)
+}
+
+async function sendData(){
+
+function randomNormal(mean, std) {
+    return (mean + std * (Math.random() * 2 - 1)).toFixed(2)
+}
+
+let payload = {
+
+motion_rate: randomNormal(0.6,0.05),
+motion_variance: randomNormal(0.2,0.05),
+entry_time: randomNormal(0.4,0.02),
+entry_deviation: randomNormal(0.1,0.05),
+session_duration: randomNormal(0.6,0.1),
+device_usage: randomNormal(0.5,0.1),
+sequence_similarity: randomNormal(0.8,0.05)
+
+}
+
+let res=await fetch("http://localhost:8500/predict",{
+
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify(payload)
+
+})
+
+let data=await res.json()
+
+document.getElementById("result").innerHTML=
+
+`Trust Score: ${data.trust_score}<br>
+Status: ${data.status}`
+
+}
+
+</script>
+
+</body>
+
+</html>

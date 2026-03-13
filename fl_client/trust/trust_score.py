@@ -1,24 +1,20 @@
-import torch.nn.functional as F
+import numpy as np
 
 
-def compute_reconstruction_error(input_data, reconstructed_data):
+def compute_reconstruction_error(x, reconstructed):
 
-    error = F.mse_loss(
-        reconstructed_data,
-        input_data,
-        reduction="mean"
-    )
+    error = np.mean((x.cpu().numpy() - reconstructed.cpu().numpy()) ** 2)
 
-    return error.item()
+    return float(error)
 
 
-def compute_trust_score(error, max_error=0.3):
-    """
-    Convert reconstruction error to trust score.
-    """
+def compute_trust_score(error):
 
-    trust = 1 - (error / max_error)
+    # expected error range
+    max_expected_error = 0.5
+
+    trust = 1 - (error / max_expected_error)
 
     trust = max(0.0, min(1.0, trust))
 
-    return trust
+    return float(trust)
