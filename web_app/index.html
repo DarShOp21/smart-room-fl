@@ -1,95 +1,567 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Room Monitor · Federated Learning UI</title>
+    <!-- Google Font & Chart.js -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-<title>Smart Room Monitor</title>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(145deg, #f0f4fa 0%, #e6ecf5 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            margin: 0;
+        }
 
-<style>
+        .dashboard {
+            max-width: 1300px;
+            width: 100%;
+            background: rgba(255,255,255,0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 3rem;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25), inset 0 1px 2px rgba(255,255,255,0.6);
+            padding: 2.5rem 2rem;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
 
-body{
-font-family:Arial;
-text-align:center;
-background:#f5f5f5;
-}
+        h1 {
+            font-weight: 600;
+            font-size: 2.2rem;
+            letter-spacing: -0.02em;
+            color: #1a2639;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        h1 span {
+            background: #2d3b5a;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 0.2rem 1rem;
+            border-radius: 40px;
+            letter-spacing: 0.3px;
+            background: linear-gradient(135deg,#1e2b40,#2c3f60);
+            box-shadow: inset 0 1px 2px #ffffff60;
+        }
 
-.container{
-margin-top:40px;
-}
+        .subtitle {
+            color: #2c3e50cc;
+            font-size: 1rem;
+            margin-bottom: 2.5rem;
+            border-left: 4px solid #3b6eff;
+            padding-left: 1rem;
+            background: #ffffff50;
+            border-radius: 0 1rem 1rem 0;
+        }
 
-button{
-padding:12px;
-font-size:16px;
-margin:10px;
-}
+        /* grid layout */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1.2fr 0.9fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
 
-.result{
-margin-top:20px;
-font-size:20px;
-}
+        @media (max-width: 900px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+        }
 
-</style>
+        /* cards */
+        .card {
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 2rem;
+            padding: 1.8rem 1.8rem;
+            box-shadow: 0 12px 30px -8px rgba(0,20,40,0.15), 0 4px 10px -4px rgba(0,0,0,0.05);
+            border: 1px solid rgba(255,255,255,0.8);
+            transition: transform 0.2s ease;
+        }
+        .card:hover {
+            transform: translateY(-3px);
+        }
 
+        .card h2 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+            color: #0b1e32;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 2px dashed #a0b8d4;
+            padding-bottom: 0.7rem;
+        }
+
+        /* feature grid */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.2rem 1.5rem;
+        }
+        .feature-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        .feature-item label {
+            font-weight: 500;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #2d4059;
+            opacity: 0.9;
+        }
+        .feature-item input {
+            background: white;
+            border: 1px solid #cdddec;
+            border-radius: 40px;
+            padding: 0.7rem 1.2rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #102a41;
+            outline: none;
+            transition: 0.15s;
+            box-shadow: inset 0 2px 4px #eef3fa;
+        }
+        .feature-item input:focus {
+            border-color: #3b6eff;
+            box-shadow: 0 0 0 3px #3b6eff30, inset 0 1px 3px #fff;
+        }
+
+        /* control bar */
+        .control-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem;
+            margin: 2rem 0 1.5rem;
+        }
+        .status-selector {
+            background: white;
+            border-radius: 60px;
+            padding: 0.2rem;
+            border: 1px solid #b9cfec;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 12px #cdd9ec60;
+        }
+        .status-selector select {
+            background: transparent;
+            border: none;
+            padding: 0.7rem 1.2rem 0.7rem 1.8rem;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #162b40;
+            outline: none;
+            cursor: pointer;
+            border-radius: 60px;
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%233b6eff" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            padding-right: 2.8rem;
+        }
+        .btn {
+            background: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #162b40;
+            box-shadow: 0 8px 18px -8px #2c3e5030, 0 0 0 1px #ffffff inset, 0 0 0 1px #bac9e0;
+            cursor: pointer;
+            transition: 0.1s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            backdrop-filter: blur(4px);
+        }
+        .btn-primary {
+            background: #1a2c4e;
+            color: white;
+            box-shadow: 0 12px 24px -10px #1e3a8a, 0 0 0 1px #7196f0 inset;
+        }
+        .btn-primary:hover {
+            background: #223d68;
+            transform: scale(1.02);
+        }
+        .btn:hover {
+            background: #f5faff;
+            box-shadow: 0 12px 22px -12px #1e3a8a;
+        }
+        .btn-primary:hover {
+            background: #2b4a7a;
+        }
+
+        /* result chip */
+        .result-chip {
+            background: #ffffffd9;
+            border-radius: 40px;
+            padding: 0.9rem 2rem;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin-top: 2rem;
+            border: 1px solid #ffffff;
+            box-shadow: 0 8px 20px #bacde270;
+        }
+        .trust-badge {
+            display: flex;
+            align-items: baseline;
+            gap: 0.6rem;
+        }
+        .trust-badge .label {
+            font-size: 1rem;
+            color: #365073;
+        }
+        .trust-badge .value {
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: #0a2647;
+            line-height: 1;
+        }
+        .status-badge {
+            background: #ebf2fc;
+            border-radius: 60px;
+            padding: 0.4rem 1.5rem;
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: #1b3b5c;
+            box-shadow: inset 0 1px 4px #b5d0ff;
+        }
+        .status-badge span {
+            font-weight: 400;
+            font-size: 0.9rem;
+            color: #4d658b;
+            margin-right: 8px;
+        }
+
+        /* chart container */
+        .chart-container {
+            background: #ffffffb3;
+            border-radius: 2rem;
+            padding: 1rem 1rem 0.8rem 1rem;
+            margin-top: 1rem;
+            height: 220px;
+            width: 100%;
+        }
+        canvas {
+            max-height: 200px;
+            width: 100% !important;
+        }
+
+        .footer-note {
+            font-size: 0.8rem;
+            color: #2f456e99;
+            margin-top: 2rem;
+            text-align: center;
+        }
+    </style>
 </head>
-
-
 <body>
+<div class="dashboard">
+    <h1>🧠 Smart Room Sensor <span>FL testbed</span></h1>
+    <div class="subtitle">Federated learning inference · manually tune features or simulate status profiles</div>
 
-<h1>Smart Room Sensor Simulator</h1>
+    <div class="grid-2">
+        <!-- LEFT CARD: manual inputs + controls -->
+        <div class="card">
+            <h2>📋 Sensor features</h2>
+            <div class="feature-grid" id="feature-grid">
+                <!-- seven inputs will be populated by js, but we write static with dynamic values later -->
+                <!-- We'll generate them via JS to keep HTML clean, but we need structure -->
+            </div>
 
-<div class="container">
+            <div class="control-bar">
+                <div class="status-selector">
+                    <select id="statusSelect">
+                        <option value="normal">🟢 Normal</option>
+                        <option value="slight">🟡 Slight anomaly</option>
+                        <option value="anomaly">🔴 Anomaly</option>
+                    </select>
+                </div>
+                <button class="btn" id="generateStatusBtn">✨ Generate from status</button>
+                <button class="btn" id="randomBtn">🎲 Random values</button>
+            </div>
 
-<button onclick="sendData()">Generate Sensor Data</button>
+            <div style="display: flex; justify-content: space-between; gap: 1rem; margin-top: 0.5rem;">
+                <button class="btn btn-primary" id="predictBtn" style="flex:2;">📡 Predict trust score</button>
+                <button class="btn" id="resetToNormalBtn" style="flex:1;">↺ reset</button>
+            </div>
 
-<div class="result" id="result"></div>
+            <!-- result area integrated -->
+            <div class="result-chip" id="resultChip">
+                <div class="trust-badge">
+                    <span class="label">Trust score</span>
+                    <span class="value" id="trustScore">0.00</span>
+                </div>
+                <div class="status-badge" id="statusBadge">
+                    <span>status</span> — 
+                </div>
+            </div>
+        </div>
 
+        <!-- RIGHT CARD: visualization -->
+        <div class="card" style="display: flex; flex-direction: column;">
+            <h2>📊 Feature profile</h2>
+            <div class="chart-container">
+                <canvas id="featureChart"></canvas>
+            </div>
+            <p style="margin-top: 1rem; font-size: 0.9rem; color: #46638b;">Current feature values (normalized 0–1)</p>
+        </div>
+    </div>
+    <div class="footer-note">
+        ⚡ Values are sent to http://localhost:8500/predict · edit manually or generate by status
+    </div>
 </div>
 
-
 <script>
+    (function() {
+        // ----- configuration -----
+        const FEATURE_KEYS = [
+            'motion_rate', 'motion_variance', 'entry_time', 'entry_deviation',
+            'session_duration', 'device_usage', 'sequence_similarity'
+        ];
 
-function randomValue(){
-return Math.random().toFixed(2)
-}
+        const DISPLAY_NAMES = {
+            motion_rate: 'Motion rate',
+            motion_variance: 'Motion variance',
+            entry_time: 'Entry time',
+            entry_deviation: 'Entry deviation',
+            session_duration: 'Session duration',
+            device_usage: 'Device usage',
+            sequence_similarity: 'Seq similarity'
+        };
 
-async function sendData(){
+        // Default "normal" means & stds (from original code)
+        const NORMAL_PARAMS = {
+            motion_rate:       { mean: 0.6, std: 0.05 },
+            motion_variance:   { mean: 0.2, std: 0.05 },
+            entry_time:        { mean: 0.4, std: 0.02 },
+            entry_deviation:   { mean: 0.1, std: 0.05 },
+            session_duration:  { mean: 0.6, std: 0.1 },
+            device_usage:      { mean: 0.5, std: 0.1 },
+            sequence_similarity:{ mean: 0.8, std: 0.05 }
+        };
 
-function randomNormal(mean, std) {
-    return (mean + std * (Math.random() * 2 - 1)).toFixed(2)
-}
+        // Status presets (modify means only, reuse std from normal but we can tweak)
+        const STATUS_PRESETS = {
+            normal: {
+                motion_rate: 0.6, motion_variance: 0.2, entry_time: 0.4,
+                entry_deviation: 0.1, session_duration: 0.6, device_usage: 0.5,
+                sequence_similarity: 0.8
+            },
+            slight: {
+                motion_rate: 0.8, motion_variance: 0.4, entry_time: 0.3,
+                entry_deviation: 0.2, session_duration: 0.4, device_usage: 0.7,
+                sequence_similarity: 0.6
+            },
+            anomaly: {
+                motion_rate: 0.3, motion_variance: 0.6, entry_time: 0.6,
+                entry_deviation: 0.4, session_duration: 0.2, device_usage: 0.2,
+                sequence_similarity: 0.3
+            }
+        };
 
-let payload = {
+        // use same std dev as normal for slight randomness
+        const STD_FOR_GEN = {
+            motion_rate: 0.05, motion_variance: 0.05, entry_time: 0.02,
+            entry_deviation: 0.05, session_duration: 0.1, device_usage: 0.1,
+            sequence_similarity: 0.05
+        };
 
-motion_rate: randomNormal(0.6,0.05),
-motion_variance: randomNormal(0.2,0.05),
-entry_time: randomNormal(0.4,0.02),
-entry_deviation: randomNormal(0.1,0.05),
-session_duration: randomNormal(0.6,0.1),
-device_usage: randomNormal(0.5,0.1),
-sequence_similarity: randomNormal(0.8,0.05)
+        // ----- helper: random normal with given mean, std, clipped 0..1 -----
+        function randomNormal(mean, std) {
+            let val = mean + std * (Math.random() * 2 - 1);  // uniform in [mean-std, mean+std] (not truly normal but simple)
+            return Math.min(1, Math.max(0, val)).toFixed(2);
+        }
 
-}
+        // ----- build inputs dynamically -----
+        const grid = document.getElementById('feature-grid');
+        function createInputs() {
+            grid.innerHTML = '';
+            FEATURE_KEYS.forEach(key => {
+                const div = document.createElement('div');
+                div.className = 'feature-item';
+                div.innerHTML = `
+                    <label for="${key}">${DISPLAY_NAMES[key]}</label>
+                    <input type="number" id="${key}" step="0.01" min="0" max="1" value="0.5">
+                `;
+                grid.appendChild(div);
+            });
+        }
+        createInputs();
 
-let res=await fetch("http://localhost:8500/predict",{
+        // get input elements
+        function getInputEl(key) { return document.getElementById(key); }
 
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify(payload)
+        // set all inputs from a values object {key: number/string}
+        function setInputs(values) {
+            FEATURE_KEYS.forEach(key => {
+                const el = getInputEl(key);
+                if (el && values[key] !== undefined) {
+                    el.value = (typeof values[key] === 'number') ? values[key].toFixed(2) : values[key];
+                }
+            });
+            updateChartFromInputs();
+        }
 
-})
+        // collect payload from inputs
+        function getPayload() {
+            let payload = {};
+            FEATURE_KEYS.forEach(key => {
+                payload[key] = parseFloat(getInputEl(key).value) || 0;
+            });
+            return payload;
+        }
 
-let data=await res.json()
+        // generate random values based on normal params (like original, but using our randomNormal)
+        function generateRandomNormal() {
+            let vals = {};
+            FEATURE_KEYS.forEach(key => {
+                let p = NORMAL_PARAMS[key];
+                vals[key] = randomNormal(p.mean, p.std);
+            });
+            return vals;
+        }
 
-document.getElementById("result").innerHTML=
+        // generate values for a given status (with slight randomness around preset mean)
+        function generateForStatus(statusKey) {
+            let preset = STATUS_PRESETS[statusKey];
+            if (!preset) preset = STATUS_PRESETS.normal;
+            let vals = {};
+            FEATURE_KEYS.forEach(key => {
+                let mean = preset[key];
+                let std = STD_FOR_GEN[key] || 0.05;
+                vals[key] = randomNormal(mean, std);
+            });
+            return vals;
+        }
 
-`Trust Score: ${data.trust_score}<br>
-Status: ${data.status}`
+        // ----- Chart initialization -----
+        const ctx = document.getElementById('featureChart').getContext('2d');
+        let featureChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: FEATURE_KEYS.map(k => DISPLAY_NAMES[k].split(' ')[0]), // short
+                datasets: [{
+                    label: 'feature value (0-1)',
+                    data: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+                    backgroundColor: 'rgba(49, 102, 212, 0.7)',
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw.toFixed(2)}` } }
+                },
+                scales: {
+                    y: { beginAtZero: true, max: 1, grid: { color: '#cedef030' } }
+                }
+            }
+        });
 
-}
+        function updateChartFromInputs() {
+            let data = FEATURE_KEYS.map(key => parseFloat(getInputEl(key).value) || 0);
+            featureChart.data.datasets[0].data = data;
+            featureChart.update();
+        }
 
+        // ----- result display -----
+        function displayResult(trustScore, status) {
+            document.getElementById('trustScore').innerText = (typeof trustScore === 'number') ? trustScore.toFixed(2) : trustScore;
+            let badge = document.getElementById('statusBadge');
+            badge.innerHTML = `<span>status</span> ${status || '—'}`;
+            // color hint
+            if (status && status.toLowerCase().includes('normal')) badge.style.background = '#dcfce7';
+            else if (status && status.toLowerCase().includes('slight')) badge.style.background = '#fef9c3';
+            else if (status && status.toLowerCase().includes('anomaly')) badge.style.background = '#fee2e2';
+            else badge.style.background = '#ebf2fc';
+        }
+
+        // ----- fetch prediction -----
+        async function sendPrediction() {
+            const payload = getPayload();
+            try {
+                let res = await fetch("http://localhost:8500/predict", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                let data = await res.json();
+                // expected: { trust_score: (number), status: string }
+                displayResult(data.trust_score, data.status);
+            } catch (e) {
+                console.error(e);
+                displayResult('?', 'connection error');
+                alert('Could not reach server at http://localhost:8500/predict');
+            }
+        }
+
+        // ----- event bindings -----
+        document.getElementById('generateStatusBtn').addEventListener('click', function() {
+            const status = document.getElementById('statusSelect').value;
+            const newVals = generateForStatus(status);
+            setInputs(newVals);
+        });
+
+        document.getElementById('randomBtn').addEventListener('click', function() {
+            const randVals = generateRandomNormal();
+            setInputs(randVals);
+        });
+
+        document.getElementById('predictBtn').addEventListener('click', function() {
+            sendPrediction();
+        });
+
+        document.getElementById('resetToNormalBtn').addEventListener('click', function() {
+            // set to fixed normal means (without randomness)
+            let normalVals = {};
+            FEATURE_KEYS.forEach(key => { normalVals[key] = NORMAL_PARAMS[key].mean.toFixed(2); });
+            setInputs(normalVals);
+        });
+
+        // Optional: update chart on any input change
+        FEATURE_KEYS.forEach(key => {
+            getInputEl(key).addEventListener('input', updateChartFromInputs);
+        });
+
+        // initialize with normal preset (a bit of randomness to show life)
+        (function init() {
+            const initVals = generateForStatus('normal');  // random around normal
+            setInputs(initVals);
+            displayResult(0.00, '—');
+        })();
+
+        // extra: if you click generate status, chart auto updates (setInputs already calls update)
+        // also predict does not change chart, only result
+
+    })();
 </script>
-
 </body>
-
 </html>
