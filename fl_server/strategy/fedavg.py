@@ -1,51 +1,102 @@
 import flwr as fl
+import numpy as np
+
 from flwr.server.strategy import FedAvg
+from fl_server.cloud_client import upload_model, upload_trust
 
 
-def get_fedavg_strategy(initial_parameters):
-    """
-    Configure the FedAvg strategy for federated learning.
-    """
+class TrustWeightedFedAvg(FedAvg):
 
-    strategy = FedAvg(
+    def aggregate_fit(self, server_round, results, failures):
 
-        # fraction of clients used for training
-        fraction_fit=1.0,
+        if not results:
+            return None, {}
 
-        # # fraction used for evaluation
-        # fraction_evaluate=1.0,
+        weights = []
+        trusts = []
 
-        # minimum clients required for training
-        min_fit_clients=1,
+        for client, fit_res in results:
 
-        # # minimum clients required for evaluation
-        # min_evaluate_clients=1,
+            params = fl.common.parameters_to_ndarrays(
+                fit_res.parameters
+            )
 
-        # minimum clients that must be connected
-        min_available_clients=1,
+            trust = fit_res.metrics.get("trust_score", 0.5)
 
-        # function to aggregate evaluation metrics
-        evaluate_metrics_aggregation_fn=aggregate_metrics,
+            weights.append(params)
+            trusts.append(trust)
 
-        # initial model parameters
-        initial_parameters=initial_parameters,
-    )
+        trusts = np.array(trusts)
 
-    return strategy
+        # normalize trust weights
+        if trusts.sum() == 0:
+            trusts = np.ones_like(trusts)
+
+        trusts = trusts / trusts.sum()
+
+        # weighted aggregation
+        aggregated = []
+
+        for layer_i in range(len(weights[0])):
+
+            layer_stack = np.array(
+                [client[layer_i] for client in weights]
+            )
+
+            weighted_layer = np.tensordot(
+                trusts,
+                layer_stack,
+                axes=1
+            )
+
+            aggregated.append(weighted_layer)
+
+        aggregated_parameters = fl.common.ndarrays_to_parameters(
+            aggregated
+        )
+
+        # Upload global model to cloud
+        upload_model(aggregated)
+
+        return aggregated_parameters, {}
+
 
 def aggregate_metrics(metrics):
 
     trust_scores = []
 
     for _, m in metrics:
+
         if "trust_score" in m:
             trust_scores.append(m["trust_score"])
 
     if len(trust_scores) > 0:
         avg_trust = sum(trust_scores) / len(trust_scores)
     else:
-        avg_trust = None
+        avg_trust = 0
 
-    print("Average client trust:", avg_trust)
+    print("Average Trust:", avg_trust)
+
+    upload_trust(avg_trust)
 
     return {"avg_trust": avg_trust}
+
+
+def get_fedavg_strategy(initial_parameters):
+
+    strategy = TrustWeightedFedAvg(
+
+        fraction_fit=1.0,
+
+        min_fit_clients=1,
+
+        min_available_clients=1,
+
+        min_evaluate_clients=1,
+
+        evaluate_metrics_aggregation_fn=aggregate_metrics,
+
+        initial_parameters=initial_parameters,
+    )
+
+    return strategy
