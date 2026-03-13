@@ -1,7 +1,6 @@
 import numpy as np
 
 def compute_reconstruction_error(x, reconstructed):
-    # x and reconstructed are torch tensors
     error = np.mean((x.cpu().numpy() - reconstructed.cpu().numpy()) ** 2)
     return float(error)
 

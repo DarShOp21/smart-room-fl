@@ -20,14 +20,14 @@ class SmartRoomClient(fl.client.NumPyClient):
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.005)
 
         # Generate only normal data for training
-        dataset = generate_dataset(num_samples=200, suspicious_ratio=0.0)
+        dataset = generate_dataset(num_samples=2000, suspicious_ratio=0.0)
         self.x_train = torch.tensor(dataset, dtype=torch.float32).to(DEVICE)
 
-        # Optionally create a small validation set from the same normal distribution
-        val_dataset = generate_dataset(num_samples=50, suspicious_ratio=0.0)
+        # Validation set from the same normal distribution
+        val_dataset = generate_dataset(num_samples=100, suspicious_ratio=0.0)
         self.x_val = torch.tensor(val_dataset, dtype=torch.float32).to(DEVICE)
 
-        # We'll store the 90th percentile error on training data after first fit
+        # Will be set after first fit
         self.error_threshold = 0.15  # fallback
 
     def get_parameters(self, config):
@@ -42,8 +42,8 @@ class SmartRoomClient(fl.client.NumPyClient):
         self.set_parameters(parameters)
         self.model.train()
 
-        # Local training
-        epochs = 10  # increased from 5
+        # Local training (more epochs than before)
+        epochs = 10
         for _ in range(epochs):
             self.optimizer.zero_grad()
             output = self.model(self.x_train)
@@ -65,7 +65,6 @@ class SmartRoomClient(fl.client.NumPyClient):
         self.model.eval()
 
         with torch.no_grad():
-            # Use validation set (or training set) for evaluation
             recon = self.model(self.x_val)
             error = compute_reconstruction_error(self.x_val, recon)
             trust = compute_trust_score(error, normal_error_threshold=self.error_threshold)
