@@ -58,6 +58,7 @@ class SmartRoomClient(fl.client.NumPyClient):
             errors = torch.mean((self.x_train - recon) ** 2, dim=1).cpu().numpy()
             self.error_threshold = np.percentile(errors, 90)  # 90th percentile
 
+        torch.save(self.model.state_dict(), "model_weights.pt")
         return self.get_parameters(config), len(self.x_train), {}
 
     def evaluate(self, parameters, config):

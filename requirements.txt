@@ -3,3 +3,4 @@ torch
 numpy
 fastapi
 uvicorn
+transformers==4.35.0
